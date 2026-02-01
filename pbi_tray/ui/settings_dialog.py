@@ -298,6 +298,74 @@ def show_settings_dialog(parent_window, on_close_callback=None):
         font=ctk.CTkFont(size=11)
     ).pack(padx=12, pady=(5, 10), anchor="w")
     
+    # === AI INSIGHTS SETTINGS ===
+    ctk.CTkLabel(
+        scroll_frame,
+        text="AI Insights (Optional)",
+        font=ctk.CTkFont(size=12, weight="bold"),
+        text_color=COLORS["accent_blue"]
+    ).pack(padx=15, pady=(10, 5), anchor="w")
+    
+    ctk.CTkLabel(
+        scroll_frame,
+        text="Enable AI-powered analysis of refresh failures and recommendations",
+        font=ctk.CTkFont(size=10),
+        text_color=COLORS["text_muted"]
+    ).pack(padx=15, pady=(0, 5), anchor="w")
+    
+    ai_frame = ctk.CTkFrame(scroll_frame, corner_radius=8, fg_color=COLORS["bg_card"])
+    ai_frame.pack(fill="x", padx=15, pady=(0, 10))
+    
+    # AI Insights toggle
+    ai_enabled_var = ctk.BooleanVar(value=state.ai_insights_enabled)
+    ctk.CTkCheckBox(
+        ai_frame,
+        text="Enable AI-powered failure analysis",
+        variable=ai_enabled_var,
+        font=ctk.CTkFont(size=11)
+    ).pack(padx=12, pady=(10, 5), anchor="w")
+    
+    # OpenAI API Key
+    ctk.CTkLabel(
+        ai_frame,
+        text="OpenAI API Key",
+        font=ctk.CTkFont(size=10),
+        text_color=COLORS["text_muted"]
+    ).pack(padx=12, pady=(5, 2), anchor="w")
+    openai_key_var = ctk.StringVar(value=state.openai_api_key)
+    openai_entry = ctk.CTkEntry(
+        ai_frame,
+        textvariable=openai_key_var,
+        width=420,
+        height=32,
+        placeholder_text="sk-... (get from platform.openai.com)",
+        show="•"  # Mask the API key
+    )
+    openai_entry.pack(padx=12, pady=(0, 5))
+    
+    # Show/hide API key toggle
+    show_key_var = ctk.BooleanVar(value=False)
+    def toggle_key_visibility():
+        if show_key_var.get():
+            openai_entry.configure(show="")
+        else:
+            openai_entry.configure(show="•")
+    
+    ctk.CTkCheckBox(
+        ai_frame,
+        text="Show API key",
+        variable=show_key_var,
+        font=ctk.CTkFont(size=10),
+        command=toggle_key_visibility
+    ).pack(padx=12, pady=(0, 5), anchor="w")
+    
+    ctk.CTkLabel(
+        ai_frame,
+        text="💡 Get your API key from platform.openai.com/api-keys",
+        font=ctk.CTkFont(size=9),
+        text_color=COLORS["text_muted"]
+    ).pack(padx=12, pady=(0, 10), anchor="w")
+    
     # === ACCOUNT SECTION ===
     ctk.CTkLabel(
         scroll_frame,
@@ -376,6 +444,19 @@ def show_settings_dialog(parent_window, on_close_callback=None):
         state.capacity_metrics_workspace = capacity_workspace_var.get().strip()
         state.selected_timezone = tz_var.get()
         state.notifications_enabled = notif_var.get()
+        
+        # Update AI settings
+        old_api_key = state.openai_api_key
+        state.openai_api_key = openai_key_var.get().strip()
+        state.ai_insights_enabled = ai_enabled_var.get()
+        
+        # Reset AI client if API key changed
+        if state.openai_api_key != old_api_key:
+            try:
+                from ..utils.ai_insights import reset_client
+                reset_client()
+            except ImportError:
+                pass
         
         # Build pipelines dict
         new_pipelines = {}

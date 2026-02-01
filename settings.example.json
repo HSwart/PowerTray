@@ -4,6 +4,8 @@
     "capacity_metrics_workspace": "YOUR_CAPACITY_METRICS_WORKSPACE_ID_HERE",
     "refresh_interval": 300,
     "timezone": "UTC",
+    "openai_api_key": "",
+    "ai_insights_enabled": true,
     "pipelines": {
         "YOUR_PIPELINE_ID_1": {
             "name": "Intra-Daily Refresh",

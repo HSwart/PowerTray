@@ -115,6 +115,8 @@ class AppState:
         self.notifications_enabled: bool = True
         self.refresh_interval: int = DEFAULT_REFRESH_INTERVAL
         self.capacity_metrics_workspace: str = DEFAULT_CAPACITY_METRICS_WORKSPACE
+        self.openai_api_key: str = ""  # OpenAI API key for AI insights
+        self.ai_insights_enabled: bool = True  # Enable AI-powered failure analysis
         
         # Runtime state
         self.last_refresh_info: dict = {}
@@ -173,6 +175,8 @@ def load_settings() -> None:
                 state.dataset_id = settings.get("dataset_id", DEFAULT_DATASET_ID)
                 state.capacity_metrics_workspace = settings.get("capacity_metrics_workspace", DEFAULT_CAPACITY_METRICS_WORKSPACE)
                 state.pipelines = settings.get("pipelines", DEFAULT_PIPELINES)
+                state.openai_api_key = settings.get("openai_api_key", "")
+                state.ai_insights_enabled = settings.get("ai_insights_enabled", True)
         else:
             # First run - use defaults
             state.workspace_id = DEFAULT_WORKSPACE_ID
@@ -197,7 +201,9 @@ def save_settings() -> None:
                 "capacity_metrics_workspace": state.capacity_metrics_workspace,
                 "pipelines": state.pipelines,
                 "timezone": state.selected_timezone,
-                "notifications_enabled": state.notifications_enabled
+                "notifications_enabled": state.notifications_enabled,
+                "openai_api_key": state.openai_api_key,
+                "ai_insights_enabled": state.ai_insights_enabled
             }, f, indent=2)
         print(f"Settings saved to {SETTINGS_FILE}")
     except Exception as e:

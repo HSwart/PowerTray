@@ -4,3 +4,4 @@ msal>=1.25.0
 requests>=2.31.0
 customtkinter>=5.2.0
 winotify>=1.1.0
+openai>=1.0.0

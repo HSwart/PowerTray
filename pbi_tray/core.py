@@ -70,11 +70,33 @@ def update_refresh_status():
                     )
                 elif new_status == "Failed":
                     error_msg = latest.get("serviceExceptionJson", "Unknown error")
-                    show_notification(
-                        "❌ Refresh Failed",
-                        f"Error: {error_msg[:100]}...",
-                        is_error=True
-                    )
+                    
+                    # Try AI-powered analysis if enabled
+                    ai_title, ai_body = None, None
+                    if state.ai_insights_enabled and state.openai_api_key:
+                        try:
+                            from .utils.ai_insights import analyze_refresh_failure, format_ai_notification
+                            analysis = analyze_refresh_failure(
+                                error_message=error_msg,
+                                refresh_info=latest,
+                                recent_history=history[:5] if history else None
+                            )
+                            if analysis:
+                                ai_title, ai_body = format_ai_notification(analysis)
+                                # Store analysis for details window
+                                state.last_refresh_info["ai_analysis"] = analysis
+                        except Exception as ai_err:
+                            log(f"AI analysis error: {ai_err}")
+                    
+                    # Use AI message if available, otherwise fallback
+                    if ai_title and ai_body:
+                        show_notification(ai_title, ai_body, is_error=True)
+                    else:
+                        show_notification(
+                            "❌ Refresh Failed",
+                            f"Error: {error_msg[:100]}...",
+                            is_error=True
+                        )
             
             log(f"Status: {new_status}, End: {end_time}")
         else:
