@@ -1,0 +1,19 @@
+{
+    "workspace_id": "YOUR_WORKSPACE_ID_HERE",
+    "dataset_id": "YOUR_DATASET_ID_HERE",
+    "capacity_metrics_workspace": "YOUR_CAPACITY_METRICS_WORKSPACE_ID_HERE",
+    "refresh_interval": 300,
+    "timezone": "UTC",
+    "pipelines": {
+        "YOUR_PIPELINE_ID_1": {
+            "name": "Intra-Daily Refresh",
+            "description": "Partial refresh (few tables)",
+            "type": "partial"
+        },
+        "YOUR_PIPELINE_ID_2": {
+            "name": "Full Daily Refresh",
+            "description": "Complete dataset refresh",
+            "type": "full"
+        }
+    }
+}
