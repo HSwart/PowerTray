@@ -127,8 +127,9 @@ $launch = Read-Host "Launch Power BI Tray now? (Y/n)"
 if ($launch -eq "" -or $launch.ToLower() -eq "y") {
     Write-Host ""
     Write-Host "Starting Power BI Tray..." -ForegroundColor Cyan
-    $pythonPath = Join-Path $venvPath "Scripts\python.exe"
-    Start-Process -FilePath $pythonPath -ArgumentList "-m", "pbi_tray" -WorkingDirectory $scriptPath
+    # Use pythonw.exe (no console window) for silent operation
+    $pythonwPath = Join-Path $venvPath "Scripts\pythonw.exe"
+    Start-Process -FilePath $pythonwPath -ArgumentList "-m", "pbi_tray" -WorkingDirectory $scriptPath -WindowStyle Hidden
     Write-Host "Application started! Look for the icon in your system tray." -ForegroundColor Green
 }
 
