@@ -92,10 +92,12 @@ window.title("")
 window.overrideredirect(True)
 window.attributes("-topmost", True)
 
-# Compact size - dynamic height based on capacity section
+# Compact size - dynamic height based on capacity and AI sections
 base_height = 280
 if data.get("capacity"):
     base_height = 360  # Extra height for capacity section
+if data.get("ai_analysis"):
+    base_height += 80  # Extra height for AI insights section
 width, height = 320, base_height
 screen_width = window.winfo_screenwidth()
 screen_height = window.winfo_screenheight()
@@ -217,6 +219,40 @@ for h in data["history"][:3]:  # Only show 3 items
     ctk.CTkLabel(row, text=h["time"], font=ctk.CTkFont(size=10), text_color=TEXT_MUTED).pack(side="left", fill="x", expand=True)
     ctk.CTkLabel(row, text=h["type"], font=ctk.CTkFont(size=10), text_color=TEXT_MUTED).pack(side="right")
 
+# AI Insights Section (if last refresh failed and analysis available)
+if data.get("ai_analysis"):
+    ctk.CTkFrame(main, height=1, fg_color=BORDER).pack(fill="x", padx=12, pady=4)
+    
+    ai = data["ai_analysis"]
+    severity_colors = {"low": "#fbc02d", "medium": "#ff9800", "high": "#ff5722", "critical": "#D60029"}
+    severity_color = severity_colors.get(ai.get("severity", "medium"), "#ff9800")
+    
+    # AI header
+    ai_header = ctk.CTkFrame(main, fg_color="transparent")
+    ai_header.pack(fill="x", padx=12, pady=(2, 4))
+    ctk.CTkLabel(ai_header, text="🤖 AI Analysis", font=ctk.CTkFont(size=11, weight="bold"), text_color=TEXT_SEC).pack(side="left")
+    
+    sev_badge = ctk.CTkFrame(ai_header, fg_color=severity_color, corner_radius=4)
+    sev_badge.pack(side="right")
+    ctk.CTkLabel(sev_badge, text=ai.get("severity", "").upper(), font=ctk.CTkFont(size=9, weight="bold"), text_color="white").pack(padx=5, pady=1)
+    
+    # Summary
+    ai_frame = ctk.CTkFrame(main, fg_color="transparent")
+    ai_frame.pack(fill="x", padx=12, pady=2)
+    
+    summary_text = ai.get("summary", "")[:100]
+    if len(ai.get("summary", "")) > 100:
+        summary_text += "..."
+    ctk.CTkLabel(ai_frame, text=summary_text, font=ctk.CTkFont(size=10), text_color=TEXT_SEC, wraplength=290, justify="left").pack(anchor="w")
+    
+    # First suggestion
+    suggestions = ai.get("suggestions", [])
+    if suggestions:
+        tip_text = f"💡 {suggestions[0][:80]}"
+        if len(suggestions[0]) > 80:
+            tip_text += "..."
+        ctk.CTkLabel(ai_frame, text=tip_text, font=ctk.CTkFont(size=9), text_color=TEXT_MUTED, wraplength=290, justify="left").pack(anchor="w", pady=(4, 0))
+
 # Footer buttons
 footer = ctk.CTkFrame(main, fg_color="transparent")
 footer.pack(fill="x", padx=12, pady=(0, 10))
@@ -265,6 +301,11 @@ window.mainloop()
         except Exception as e:
             log(f"Error getting capacity metrics for flyout: {e}")
         
+        # Get AI analysis if available (from last failed refresh)
+        ai_analysis_data = None
+        if state.last_refresh_status == "Failed":
+            ai_analysis_data = state.last_refresh_info.get("ai_analysis")
+        
         flyout_data = json.dumps({
             "status": state.last_refresh_status,
             "last_refresh": _get_last_refresh_time_display(),
@@ -273,6 +314,7 @@ window.mainloop()
             "timezone": state.selected_timezone,
             "history": history_data,
             "capacity": capacity_data,
+            "ai_analysis": ai_analysis_data,
             "pbi_url": f"https://app.powerbi.com/groups/{state.workspace_id}/datasets/{state.dataset_id}/details",
             "authenticated": state.last_refresh_status != "NotSignedIn",
             "parent_pid": os.getpid()

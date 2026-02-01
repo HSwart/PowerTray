@@ -937,6 +937,60 @@ class DetailsWindow:
         except:
             pass
         
+        # Check for AI analysis on failed refreshes
+        ai_analysis = None
+        if state.last_refresh_status == "Failed":
+            ai_analysis = state.last_refresh_info.get("ai_analysis")
+        
+        # Show AI Analysis section if available
+        if ai_analysis:
+            ai_frame = ctk.CTkFrame(details_frame, fg_color=COLORS["bg_dark"], corner_radius=6)
+            ai_frame.pack(fill="x", padx=8, pady=(6, 4))
+            
+            # AI Header with severity badge
+            ai_header = ctk.CTkFrame(ai_frame, fg_color="transparent")
+            ai_header.pack(fill="x", padx=8, pady=(6, 2))
+            
+            ctk.CTkLabel(ai_header, text="🤖 AI Analysis",
+                        font=ctk.CTkFont(size=11, weight="bold"),
+                        text_color=COLORS["accent_blue"]).pack(side="left")
+            
+            severity = ai_analysis.get("severity", "medium")
+            severity_colors = {"low": "#fbc02d", "medium": "#ff9800", "high": "#ff5722", "critical": "#D60029"}
+            sev_color = severity_colors.get(severity, "#ff9800")
+            
+            sev_badge = ctk.CTkFrame(ai_header, fg_color=sev_color, corner_radius=4)
+            sev_badge.pack(side="right")
+            ctk.CTkLabel(sev_badge, text=severity.upper(), font=ctk.CTkFont(size=9, weight="bold"),
+                        text_color="white").pack(padx=4, pady=1)
+            
+            # Summary
+            summary = ai_analysis.get("summary", "")
+            if summary:
+                ctk.CTkLabel(ai_frame, text=summary, font=ctk.CTkFont(size=11),
+                            text_color=COLORS["text_secondary"], wraplength=400, justify="left",
+                            anchor="w").pack(fill="x", padx=8, pady=(2, 4))
+            
+            # Cause
+            cause = ai_analysis.get("cause", "")
+            if cause:
+                ctk.CTkLabel(ai_frame, text=f"Cause: {cause}", font=ctk.CTkFont(size=10),
+                            text_color=COLORS["text_muted"], wraplength=400, justify="left",
+                            anchor="w").pack(fill="x", padx=8, pady=(0, 2))
+            
+            # Suggestions
+            suggestions = ai_analysis.get("suggestions", [])
+            if suggestions:
+                ctk.CTkLabel(ai_frame, text="💡 Suggestions:",
+                            font=ctk.CTkFont(size=10, weight="bold"),
+                            text_color=COLORS["text_secondary"]).pack(anchor="w", padx=8, pady=(4, 2))
+                for i, suggestion in enumerate(suggestions[:3], 1):
+                    ctk.CTkLabel(ai_frame, text=f"  {i}. {suggestion}",
+                                font=ctk.CTkFont(size=10), text_color=COLORS["text_muted"],
+                                wraplength=380, justify="left", anchor="w").pack(fill="x", padx=8)
+                
+                ctk.CTkFrame(ai_frame, height=6, fg_color="transparent").pack()
+        
         if not details:
             ctk.CTkLabel(details_frame, text="Table details not available",
                         font=ctk.CTkFont(size=11), text_color=COLORS["text_muted"]).pack(pady=8)
