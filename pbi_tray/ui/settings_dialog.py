@@ -364,7 +364,165 @@ def show_settings_dialog(parent_window, on_close_callback=None):
         text="💡 Get your API key from platform.openai.com/api-keys",
         font=ctk.CTkFont(size=9),
         text_color=COLORS["text_muted"]
-    ).pack(padx=12, pady=(0, 10), anchor="w")
+    ).pack(padx=12, pady=(0, 5), anchor="w")
+    
+    # Test AI Analysis button
+    test_result_label = ctk.CTkLabel(
+        ai_frame,
+        text="",
+        font=ctk.CTkFont(size=10),
+        text_color=COLORS["text_secondary"],
+        wraplength=400
+    )
+    
+    def test_ai_analysis():
+        api_key = openai_key_var.get().strip()
+        if not api_key:
+            test_result_label.configure(text="❌ Please enter an API key first", text_color="#D60029")
+            return
+        
+        test_result_label.configure(text="🔄 Testing AI analysis...", text_color=COLORS["text_muted"])
+        settings_window.update()
+        
+        def run_test():
+            try:
+                # Temporarily set the API key for testing
+                old_key = state.openai_api_key
+                state.openai_api_key = api_key
+                
+                from ..utils.ai_insights import reset_client, analyze_refresh_failure
+                reset_client()
+                
+                # Test with a sample error
+                test_error = "The gateway data source is unreachable. Please verify the data source settings and gateway connectivity."
+                test_refresh_info = {
+                    "status": "Failed",
+                    "refreshType": "ViaEnhancedApi",
+                    "startTime": "2026-02-01T20:00:00Z",
+                    "endTime": "2026-02-01T20:05:00Z"
+                }
+                
+                result = analyze_refresh_failure(test_error, test_refresh_info)
+                
+                # Restore original key
+                state.openai_api_key = old_key
+                reset_client()
+                
+                if result:
+                    # Store test result in state for display
+                    state.last_refresh_info["ai_analysis"] = result
+                    state._test_ai_result = result
+                    
+                    summary = result.get("summary", "No summary")
+                    severity = result.get("severity", "unknown").upper()
+                    settings_window.after(0, lambda: test_result_label.configure(
+                        text=f"✅ Success! [{severity}] {summary[:80]}...",
+                        text_color="#009180"
+                    ))
+                else:
+                    settings_window.after(0, lambda: test_result_label.configure(
+                        text="❌ AI returned no analysis. Check API key.",
+                        text_color="#D60029"
+                    ))
+            except Exception as e:
+                error_msg = str(e)[:60]
+                settings_window.after(0, lambda: test_result_label.configure(
+                    text=f"❌ Error: {error_msg}",
+                    text_color="#D60029"
+                ))
+        
+        threading.Thread(target=run_test, daemon=True).start()
+    
+    test_btn_frame = ctk.CTkFrame(ai_frame, fg_color="transparent")
+    test_btn_frame.pack(fill="x", padx=12, pady=(0, 5))
+    
+    ctk.CTkButton(
+        test_btn_frame,
+        text="🧪 Test AI Analysis",
+        width=130,
+        height=28,
+        corner_radius=4,
+        font=ctk.CTkFont(size=10),
+        fg_color="#4a4a4a",
+        hover_color="#5a5a5a",
+        command=test_ai_analysis
+    ).pack(side="left")
+    
+    def simulate_failure():
+        """Simulate a failed refresh with AI analysis to test UI display."""
+        api_key = openai_key_var.get().strip()
+        if not api_key:
+            test_result_label.configure(text="❌ Please enter an API key first", text_color="#D60029")
+            return
+        
+        test_result_label.configure(text="🔄 Simulating failure with AI analysis...", text_color=COLORS["text_muted"])
+        settings_window.update()
+        
+        def run_simulation():
+            try:
+                # Temporarily set the API key
+                old_key = state.openai_api_key
+                state.openai_api_key = api_key
+                
+                from ..utils.ai_insights import reset_client, analyze_refresh_failure
+                reset_client()
+                
+                # Test with a sample error
+                test_error = "The gateway 'DataS_Gateway' is offline or unreachable. Connection timed out after 30 seconds."
+                test_refresh_info = {
+                    "status": "Failed",
+                    "refreshType": "ViaEnhancedApi",
+                    "startTime": "2026-02-01T20:00:00Z",
+                    "endTime": "2026-02-01T20:05:00Z",
+                    "serviceExceptionJson": test_error
+                }
+                
+                result = analyze_refresh_failure(test_error, test_refresh_info)
+                
+                if result:
+                    # Update state to simulate a failure
+                    state.last_refresh_status = "Failed"
+                    state.last_refresh_info = test_refresh_info
+                    state.last_refresh_info["ai_analysis"] = result
+                    
+                    # Update tray menu
+                    from ..tray import update_menu, update_icon
+                    update_icon()
+                    update_menu()
+                    
+                    settings_window.after(0, lambda: test_result_label.configure(
+                        text="✅ Simulated! Check tray menu and details window.",
+                        text_color="#009180"
+                    ))
+                else:
+                    state.openai_api_key = old_key
+                    reset_client()
+                    settings_window.after(0, lambda: test_result_label.configure(
+                        text="❌ AI returned no analysis.",
+                        text_color="#D60029"
+                    ))
+            except Exception as e:
+                error_msg = str(e)[:60]
+                settings_window.after(0, lambda: test_result_label.configure(
+                    text=f"❌ Error: {error_msg}",
+                    text_color="#D60029"
+                ))
+        
+        threading.Thread(target=run_simulation, daemon=True).start()
+    
+    ctk.CTkButton(
+        test_btn_frame,
+        text="🔴 Simulate Failure",
+        width=130,
+        height=28,
+        corner_radius=4,
+        font=ctk.CTkFont(size=10),
+        fg_color="#8B0000",
+        hover_color="#A52A2A",
+        command=simulate_failure
+    ).pack(side="left", padx=(10, 0))
+    
+    test_result_label.pack(padx=12, pady=(0, 10), anchor="w")
     
     # === ACCOUNT SECTION ===
     ctk.CTkLabel(

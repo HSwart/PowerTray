@@ -336,7 +336,11 @@ def create_menu() -> pystray.Menu:
     
     def get_ai_summary():
         """Get AI analysis summary for menu display."""
+        if state.last_refresh_status != "Failed":
+            return None
         analysis = state.last_refresh_info.get("ai_analysis", {})
+        if not analysis:
+            return None
         summary = analysis.get("summary", "")
         if len(summary) > 60:
             summary = summary[:57] + "..."
@@ -344,7 +348,11 @@ def create_menu() -> pystray.Menu:
     
     def get_ai_suggestion():
         """Get first AI suggestion for menu display."""
+        if state.last_refresh_status != "Failed":
+            return None
         analysis = state.last_refresh_info.get("ai_analysis", {})
+        if not analysis:
+            return None
         suggestions = analysis.get("suggestions", [])
         if suggestions:
             tip = suggestions[0]
@@ -355,7 +363,11 @@ def create_menu() -> pystray.Menu:
     
     def get_ai_severity():
         """Get AI severity level."""
+        if state.last_refresh_status != "Failed":
+            return None
         analysis = state.last_refresh_info.get("ai_analysis", {})
+        if not analysis:
+            return None
         severity = analysis.get("severity", "medium")
         icons = {"low": "⚠️", "medium": "🔶", "high": "🔴", "critical": "🚨"}
         return icons.get(severity, "🔶")
