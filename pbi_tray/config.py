@@ -115,6 +115,7 @@ class AppState:
         self.notifications_enabled: bool = True
         self.refresh_interval: int = DEFAULT_REFRESH_INTERVAL
         self.capacity_metrics_workspace: str = DEFAULT_CAPACITY_METRICS_WORKSPACE
+        self.selected_capacity: str = ""  # Filter insights to a specific capacity (empty = all)
         self.openai_api_key: str = ""  # OpenAI API key for AI insights
         self.ai_insights_enabled: bool = True  # Enable AI-powered failure analysis
         
@@ -125,6 +126,7 @@ class AppState:
         self.previous_refresh_status: str | None = None
         self.auth_error_message: str | None = None
         self.capacity_metrics: dict | None = None  # Current capacity metrics
+        self.capacity_insights: dict | None = None  # AI-powered capacity insights
         self.gateway_summary: dict | None = None  # Cached gateway status
         self.next_scheduled: list | None = None  # Cached next scheduled refresh times
         
@@ -150,6 +152,7 @@ class AppState:
         self.previous_refresh_status = None
         self.auth_error_message = None
         self.capacity_metrics = None
+        self.capacity_insights = None
         self.gateway_summary = None
         self.next_scheduled = None
         self.semantic_model_name = None
@@ -174,6 +177,7 @@ def load_settings() -> None:
                 state.workspace_id = settings.get("workspace_id", DEFAULT_WORKSPACE_ID)
                 state.dataset_id = settings.get("dataset_id", DEFAULT_DATASET_ID)
                 state.capacity_metrics_workspace = settings.get("capacity_metrics_workspace", DEFAULT_CAPACITY_METRICS_WORKSPACE)
+                state.selected_capacity = settings.get("selected_capacity", "")
                 state.pipelines = settings.get("pipelines", DEFAULT_PIPELINES)
                 state.openai_api_key = settings.get("openai_api_key", "")
                 state.ai_insights_enabled = settings.get("ai_insights_enabled", True)
@@ -199,6 +203,7 @@ def save_settings() -> None:
                 "workspace_id": state.workspace_id,
                 "dataset_id": state.dataset_id,
                 "capacity_metrics_workspace": state.capacity_metrics_workspace,
+                "selected_capacity": state.selected_capacity,
                 "pipelines": state.pipelines,
                 "timezone": state.selected_timezone,
                 "notifications_enabled": state.notifications_enabled,

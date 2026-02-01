@@ -28,6 +28,7 @@ from .core import (
 from .api import trigger_refresh, cancel_refresh, get_next_scheduled_refresh
 from .utils import log, format_datetime, format_duration, parse_datetime
 from .utils.datetime_helpers import get_refresh_type_display
+from .utils.ai_insights import analyze_capacity, is_ai_enabled
 
 
 # Global icon reference
@@ -251,6 +252,16 @@ def on_check_status(icon_ref, item):
     threading.Thread(target=update_refresh_status, daemon=True).start()
 
 
+def on_get_capacity_insights(icon_ref, item):
+    """Show notification to use Details window for capacity insights."""
+    from .utils import show_notification
+    log("[Tray] Get AI Insights clicked - showing notification")
+    show_notification(
+        "📊 Capacity Insights",
+        "Open Details window and click '✨ Insights' button to analyze capacity usage."
+    )
+
+
 def on_toggle_notifications(icon_ref, item):
     """Toggle notifications."""
     state.notifications_enabled = not state.notifications_enabled
@@ -409,6 +420,69 @@ def create_menu() -> pystray.Menu:
             pystray.MenuItem(f"  • Interactive: {int_pct:.1f}%", None, enabled=False),
         ]
     
+    def has_capacity_insights(item):
+        """Check if capacity insights are available."""
+        return state.capacity_insights is not None
+    
+    def get_capacity_insight_status():
+        """Get capacity insights status for menu display."""
+        if not state.capacity_insights:
+            return None
+        status = state.capacity_insights.get("status", "unknown")
+        icons = {"healthy": "✅", "warning": "⚠️", "critical": "🚨", "unknown": "❓"}
+        return icons.get(status, "📊")
+    
+    def get_capacity_insight_summary():
+        """Get capacity insights summary for menu display - short version."""
+        if not state.capacity_insights:
+            return None
+        stats = state.capacity_insights.get("statistics", {})
+        status = state.capacity_insights.get("status", "unknown")
+        avg = stats.get("average_utilization", 0)
+        max_u = stats.get("max_utilization", 0)
+        # Keep it very short for menu
+        return f"{status.capitalize()} • Avg: {avg:.1f}% • Peak: {max_u:.1f}%"
+    
+    def get_capacity_trend():
+        """Get capacity trend for menu display."""
+        if not state.capacity_insights:
+            return None
+        trend = state.capacity_insights.get("trend", "stable")
+        stats = state.capacity_insights.get("statistics", {})
+        trend_pct = stats.get("trend_pct", 0)
+        
+        icons = {"increasing": "📈", "decreasing": "📉", "stable": "➡️"}
+        icon = icons.get(trend, "➡️")
+        
+        if abs(trend_pct) > 0.5:
+            return f"{icon} {'+' if trend_pct > 0 else ''}{trend_pct:.0f}% vs prior"
+        return f"{icon} Stable"
+    
+    def get_capacity_recommendations():
+        """Generate recommendation menu items."""
+        if not state.capacity_insights:
+            return [pystray.MenuItem("No insights available", None, enabled=False)]
+        
+        recs = state.capacity_insights.get("recommendations", [])
+        if not recs:
+            return [pystray.MenuItem("No recommendations", None, enabled=False)]
+        
+        items = []
+        for i, rec in enumerate(recs[:3]):  # Max 3 recommendations
+            # Handle if rec is a dict (from AI) or string (from rules)
+            if isinstance(rec, dict):
+                text = rec.get("action", rec.get("text", str(rec)))
+            else:
+                text = str(rec)
+            # Keep full text - Windows tray menus can handle longer text
+            items.append(pystray.MenuItem(f"💡 {text}", None, enabled=False))
+        
+        return items
+    
+    def has_capacity_workspace(item):
+        """Check if capacity metrics workspace is configured."""
+        return bool(state.capacity_metrics_workspace)
+    
     menu = pystray.Menu(
         # Model name at top (compact header)
         pystray.MenuItem(
@@ -511,6 +585,46 @@ def create_menu() -> pystray.Menu:
             lambda text: f"  └ Interactive: {get_capacity_int_display()}",
             None,
             enabled=False
+        ),
+        
+        # Capacity Insights - AI-powered analysis
+        pystray.MenuItem(
+            "✨ Capacity Insights",
+            pystray.Menu(
+                pystray.MenuItem(
+                    "� Analyze (via Details window)",
+                    on_get_capacity_insights,
+                    visible=has_capacity_workspace
+                ),
+                pystray.Menu.SEPARATOR,
+                # Status summary
+                pystray.MenuItem(
+                    lambda text: f"{get_capacity_insight_status()} {get_capacity_insight_summary()}" if has_capacity_insights(None) else "No insights yet - run from Details window",
+                    None,
+                    enabled=False
+                ),
+                # Trend indicator
+                pystray.MenuItem(
+                    lambda text: get_capacity_trend() or "",
+                    None,
+                    enabled=False,
+                    visible=has_capacity_insights
+                ),
+                pystray.Menu.SEPARATOR,
+                # Recommendations submenu
+                pystray.MenuItem(
+                    "Recommendations",
+                    pystray.Menu(lambda: get_capacity_recommendations()),
+                    visible=has_capacity_insights
+                ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Configure in settings.json",
+                    None,
+                    enabled=False,
+                    visible=lambda item: not has_capacity_workspace(item)
+                ),
+            )
         ),
         pystray.Menu.SEPARATOR,
         

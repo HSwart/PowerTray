@@ -24,6 +24,7 @@ from ..api import (
 from ..utils import log, format_datetime, format_duration, parse_datetime, show_notification
 from ..utils.datetime_helpers import format_time_only, get_refresh_type_display
 from .theme import COLORS, STATUS_COLORS, get_status_color
+from .insights_window import show_insights_window
 
 
 class DetailsWindow:
@@ -1086,6 +1087,11 @@ class DetailsWindow:
                      font=ctk.CTkFont(size=12), fg_color=COLORS["border"], hover_color="#4a4a4a",
                      command=self._show_settings).pack(side="left")
         
+        # AI Insights button
+        ctk.CTkButton(inner, text="✨ Insights", width=85, height=34, corner_radius=6,
+                     font=ctk.CTkFont(size=12), fg_color=COLORS["accent_blue"], hover_color="#3a7ab0",
+                     command=self._show_insights).pack(side="left", padx=(4, 0))
+        
         self.refresh_data_btn = ctk.CTkButton(inner, text="Refresh Data", width=100, height=34, corner_radius=6,
                      font=ctk.CTkFont(size=12), fg_color=COLORS["border"], hover_color="#4a4a4a",
                      command=self._refresh_displayed_data)
@@ -1138,6 +1144,10 @@ class DetailsWindow:
         
         threading.Thread(target=do_cancel, daemon=True).start()
         self._on_close()
+    
+    def _show_insights(self):
+        """Show the AI Insights window."""
+        show_insights_window(self.window)
     
     def _refresh_displayed_data(self):
         """Refresh all displayed data by fetching fresh data from APIs."""
