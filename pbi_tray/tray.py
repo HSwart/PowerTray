@@ -329,6 +329,37 @@ def create_menu() -> pystray.Menu:
     def has_error(item):
         return get_last_error_message() is not None
     
+    def has_ai_analysis(item):
+        """Check if AI analysis is available for the last failed refresh."""
+        return (state.last_refresh_status == "Failed" and 
+                state.last_refresh_info.get("ai_analysis") is not None)
+    
+    def get_ai_summary():
+        """Get AI analysis summary for menu display."""
+        analysis = state.last_refresh_info.get("ai_analysis", {})
+        summary = analysis.get("summary", "")
+        if len(summary) > 60:
+            summary = summary[:57] + "..."
+        return summary
+    
+    def get_ai_suggestion():
+        """Get first AI suggestion for menu display."""
+        analysis = state.last_refresh_info.get("ai_analysis", {})
+        suggestions = analysis.get("suggestions", [])
+        if suggestions:
+            tip = suggestions[0]
+            if len(tip) > 55:
+                tip = tip[:52] + "..."
+            return f"💡 {tip}"
+        return None
+    
+    def get_ai_severity():
+        """Get AI severity level."""
+        analysis = state.last_refresh_info.get("ai_analysis", {})
+        severity = analysis.get("severity", "medium")
+        icons = {"low": "⚠️", "medium": "🔶", "high": "🔴", "critical": "🚨"}
+        return icons.get(severity, "🔶")
+    
     def has_next_refresh(item):
         return get_next_refresh_display() is not None
     
@@ -397,6 +428,20 @@ def create_menu() -> pystray.Menu:
             None,
             enabled=False,
             visible=has_error
+        ),
+        
+        # AI Insights (only if failed and AI analysis available)
+        pystray.MenuItem(
+            lambda text: f"{get_ai_severity()} AI: {get_ai_summary()}",
+            None,
+            enabled=False,
+            visible=has_ai_analysis
+        ),
+        pystray.MenuItem(
+            lambda text: get_ai_suggestion() or "",
+            None,
+            enabled=False,
+            visible=lambda item: has_ai_analysis(item) and get_ai_suggestion() is not None
         ),
         
         # Sign In button - shown prominently when not signed in
